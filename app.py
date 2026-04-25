@@ -3,17 +3,23 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from datetime import date, datetime
+from dotenv import load_dotenv
+
+# Chargement des variables d'environnement
+load_dotenv()
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__, template_folder=os.path.join(base_dir, 'templates'))
 bcrypt = Bcrypt(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(base_dir, 'stageboard.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///' + os.path.join(base_dir, 'stageboard.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'stageboard_secret_key_2026'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'stageboard_secret_key_2026')
 
 db = SQLAlchemy(app)
+
+# --- CONTEXT PROCESSOR ALERTES ---
 @app.context_processor
 def inject_alertes():
     if 'user_id' in session:
@@ -30,7 +36,6 @@ def inject_alertes():
                         count += 1
             return dict(alertes_count=count)
     return dict(alertes_count=0)
-
 
 # --- MODÈLES ---
 
@@ -93,7 +98,7 @@ class Entreprise(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- HELPER ---
+# --- HELPERS ---
 def get_stage_actif():
     return Stage.query.filter_by(
         user_id=session['user_id'], actif=True
@@ -137,7 +142,6 @@ def register():
         try:
             db.session.add(new_user)
             db.session.flush()
-            # Créer le premier stage automatiquement
             premier_stage = Stage(
                 user_id=new_user.id,
                 type_stage=type_stage,
@@ -191,14 +195,12 @@ def dashboard():
         return redirect(url_for('login'))
 
     stage = get_stage_actif()
-
     jours_restants = 0
     progression = 0
     alertes = []
 
     if stage:
         update_statuts(stage.id)
-
         if stage.date_debut and stage.date_fin:
             debut = date.fromisoformat(stage.date_debut)
             fin = date.fromisoformat(stage.date_fin)
@@ -208,7 +210,6 @@ def dashboard():
             jours_restants = max((fin - today).days, 0)
             progression = min(round((jours_passes / total_jours) * 100), 100) if total_jours > 0 else 0
 
-        # Alertes échéances < 7 jours
         for e in stage.echeances:
             if e.statut != 'termine':
                 jours = (date.fromisoformat(e.date_limite) - date.today()).days
@@ -246,13 +247,10 @@ def dashboard():
 def nouveau_stage():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
     if request.method == 'POST':
-        # Désactiver l'ancien stage
         ancien = get_stage_actif()
         if ancien:
             ancien.actif = False
-
         nouveau = Stage(
             user_id=session['user_id'],
             type_stage=request.form.get('type_stage'),
@@ -264,14 +262,15 @@ def nouveau_stage():
         db.session.commit()
         flash('Nouveau stage créé !', 'success')
         return redirect(url_for('dashboard'))
-
     return render_template('nouveau_stage.html')
 
 @app.route('/stages/historique')
 def historique_stages():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    stages = Stage.query.filter_by(user_id=session['user_id']).order_by(Stage.date_debut.desc()).all()
+    stages = Stage.query.filter_by(
+        user_id=session['user_id']
+    ).order_by(Stage.date_debut.desc()).all()
     return render_template('historique_stages.html', stages=stages)
 
 # --- ÉCHÉANCES ---
@@ -282,7 +281,7 @@ def echeances():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        flash('Créez d\'abord un stage.', 'warning')
+        flash("Créez d'abord un stage.", 'warning')
         return redirect(url_for('nouveau_stage'))
     update_statuts(stage.id)
     filtre = request.args.get('filtre', 'tous')
@@ -343,7 +342,7 @@ def journal():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        flash('Créez d\'abord un stage.', 'warning')
+        flash("Créez d'abord un stage.", 'warning')
         return redirect(url_for('nouveau_stage'))
     date_debut = request.args.get('date_debut', '')
     date_fin = request.args.get('date_fin', '')
@@ -395,7 +394,7 @@ def entreprise():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        flash('Créez d\'abord un stage.', 'warning')
+        flash("Créez d'abord un stage.", 'warning')
         return redirect(url_for('nouveau_stage'))
     ent = Entreprise.query.filter_by(stage_id=stage.id).first()
     return render_template('entreprise.html', entreprise=ent)
@@ -432,7 +431,9 @@ def profil():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user = db.session.get(User, session['user_id'])
-    stages = Stage.query.filter_by(user_id=session['user_id']).order_by(Stage.date_debut.desc()).all()
+    stages = Stage.query.filter_by(
+        user_id=session['user_id']
+    ).order_by(Stage.date_debut.desc()).all()
     return render_template('profil.html', user=user, stages=stages)
 
 @app.route('/profil/modifier', methods=['POST'])
