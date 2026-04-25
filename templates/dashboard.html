@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+
+{% block content %}
+
+<!-- En-tête -->
+<div class="page-header mb-4">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Bonjour {{ session.get('user_prenom', '') }} 👋</h2>
+            <p class="text-muted">Voici un aperçu de votre stage aujourd'hui.</p>
+        </div>
+    </div>
+</div>
+
+
+<div class="row mb-4">
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <p class="text-muted mb-1">Jours restants</p>
+                <h1 class="text-primary fw-bold">{{ jours_restants }}</h1>
+                <small class="text-muted">Jusqu'à la fin du stage</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <p class="text-muted mb-1">Prochaine échéance</p>
+                <h4 class="text-warning fw-bold">
+                    {% if prochaine_echeance %}
+                        {{ prochaine_echeance.date_limite }}
+                    {% else %}
+                        Aucune
+                    {% endif %}
+                </h4>
+                <small class="text-muted">
+                    {% if prochaine_echeance %}{{ prochaine_echeance.titre }}{% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <p class="text-muted mb-1">Échéances totales</p>
+                <h1 class="text-info fw-bold">{{ total_echeances }}</h1>
+                <small class="text-muted">{{ echeances_retard }} en retard</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <p class="text-muted mb-1">Progression</p>
+                <h1 class="text-success fw-bold">{{ progression }}%</h1>
+                <small class="text-muted">Du stage effectué</small>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- BARRE DE PROGRESSION -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+            <span class="fw-bold">Progression globale</span>
+            <span class="text-muted">{{ progression }}%</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar bg-primary" style="width: {{ progression }}%"></div>
+        </div>
+    </div>
+</div>
+
+<!-- PROCHAINE ÉCHÉANCE + DERNIÈRE ENTRÉE JOURNAL -->
+<div class="row">
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <h4 class="card-title">📅 Prochaine échéance</h4>
+                <a href="/echeances" class="text-muted" style="font-size:0.85rem;">Voir toutes →</a>
+            </div>
+            <div class="card-body">
+                {% if prochaine_echeance %}
+                    <h5>{{ prochaine_echeance.titre }}</h5>
+                    <p class="text-muted">{{ prochaine_echeance.description }}</p>
+                    <span class="badge 
+                        {% if prochaine_echeance.statut == 'retard' %}bg-danger
+                        {% elif prochaine_echeance.statut == 'termine' %}bg-success
+                        {% else %}bg-warning{% endif %}">
+                        {{ prochaine_echeance.statut }}
+                    </span>
+                    <span class="ms-2 text-muted">{{ prochaine_echeance.date_limite }}</span>
+                {% else %}
+                    <p class="text-muted">Aucune échéance à venir.</p>
+                    <a href="/echeances" class="btn btn-sm btn-primary">Ajouter une échéance</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <h4 class="card-title">📓 Dernière entrée journal</h4>
+                <a href="/journal" class="text-muted" style="font-size:0.85rem;">Voir le journal →</a>
+            </div>
+            <div class="card-body">
+                {% if derniere_entree %}
+                    <small class="text-muted">{{ derniere_entree.date_entree }}</small>
+                    <h5 class="mt-1">{{ derniere_entree.taches[:80] }}...</h5>
+                    <p class="text-muted">{{ derniere_entree.competences[:100] }}...</p>
+                {% else %}
+                    <p class="text-muted">Aucune entrée dans le journal.</p>
+                    <a href="/journal" class="btn btn-sm btn-primary">Ajouter une entrée</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

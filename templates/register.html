@@ -2,21 +2,87 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription - StageBoard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+   <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+   <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; padding: 30px 0; }
+        .card { border: none; border-radius: 15px; }
+        .btn-success { background: #0f3460; border: none; }
+        .btn-success:hover { background: #e94560; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <h2>Inscription</h2>
-        <form action="/register" method="POST">
-            <input type="text" name="nom" placeholder="Nom" required>
-            <input type="text" name="prenom" placeholder="Prénom" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Mot de passe" required>
-            <button type="submit">S'inscrire</button>
-        </form>
-        <a href="/" class="link">Retour à l'accueil</a>
+<body class="d-flex align-items-center justify-content-center">
+    <div class="col-md-5">
+        <div class="text-center mb-4">
+            <h2 class="text-white fw-bold">🎓 StageBoard</h2>
+            <p class="text-secondary">Créer votre compte étudiant</p>
+        </div>
+        <div class="card shadow-lg p-4">
+            <h4 class="mb-3 text-center">Inscription</h4>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="row">
+                    <div class="col mb-3">
+                        <label class="form-label">Nom</label>
+                        <input type="text" name="nom" class="form-control" required>
+                    </div>
+                    <div class="col mb-3">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" name="prenom" class="form-control" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Filière</label>
+                    <input type="text" name="filiere" class="form-control" placeholder="Ex: Cybersécurité, Réseaux...">
+                </div>
+                <div class="row">
+                    <div class="col mb-3">
+                        <label class="form-label">Année</label>
+                        <select name="annee" class="form-select">
+                            <option value="1">1ère année</option>
+                            <option value="2">2ème année</option>
+                            <option value="3">3ème année</option>
+                        </select>
+                    </div>
+                    <div class="col mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="type_stage" class="form-select">
+                            <option value="stage">Stage</option>
+                            <option value="alternance">Alternance</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col mb-3">
+                        <label class="form-label">Date début</label>
+                        <input type="date" name="date_debut" class="form-control">
+                    </div>
+                    <div class="col mb-3">
+                        <label class="form-label">Date fin</label>
+                        <input type="date" name="date_fin" class="form-control">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success w-100 py-2">Créer mon compte</button>
+            </form>
+            <p class="text-center mt-3 mb-0">
+                Déjà un compte ? <a href="/login">Se connecter</a>
+            </p>
+        </div>
     </div>
 </body>
 </html>

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Entreprise{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+    <h2 class="mb-0">🏢 Entreprise</h2>
+    <p class="text-muted">Informations sur votre entreprise d'accueil et votre tuteur.</p>
+</div>
+
+<div class="row">
+
+    <!-- FICHE ENTREPRISE -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">Informations entreprise</h4>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalEntreprise">
+                    ✏️ Modifier
+                </button>
+            </div>
+            <div class="card-body">
+                {% if entreprise %}
+                <table class="table table-borderless">
+                    <tr><th>Nom</th><td>{{ entreprise.nom }}</td></tr>
+                    <tr><th>Secteur</th><td>{{ entreprise.secteur }}</td></tr>
+                    <tr><th>Adresse</th><td>{{ entreprise.adresse }}</td></tr>
+                    <tr><th>Téléphone</th><td>{{ entreprise.telephone }}</td></tr>
+                    <tr><th>Site web</th><td>
+                        {% if entreprise.site_web %}
+                        <a href="{{ entreprise.site_web }}" target="_blank">{{ entreprise.site_web }}</a>
+                        {% endif %}
+                    </td></tr>
+                </table>
+                {% else %}
+                <p class="text-muted text-center py-3">Aucune entreprise renseignée.</p>
+                <div class="text-center">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEntreprise">
+                        + Ajouter mon entreprise
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- FICHE TUTEUR -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">Tuteur professionnel</h4>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalEntreprise">
+                    ✏️ Modifier
+                </button>
+            </div>
+            <div class="card-body">
+                {% if entreprise %}
+                <table class="table table-borderless">
+                    <tr><th>Nom</th><td>{{ entreprise.tuteur_nom }}</td></tr>
+                    <tr><th>Poste</th><td>{{ entreprise.tuteur_poste }}</td></tr>
+                    <tr><th>Email</th><td>{{ entreprise.tuteur_email }}</td></tr>
+                    <tr><th>Téléphone</th><td>{{ entreprise.tuteur_telephone }}</td></tr>
+                    <tr><th>Notes</th><td>{{ entreprise.tuteur_notes }}</td></tr>
+                </table>
+                {% else %}
+                <p class="text-muted text-center py-3">Aucun tuteur renseigné.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL ENTREPRISE + TUTEUR -->
+<div class="modal fade" id="modalEntreprise" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Fiche entreprise & tuteur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/entreprise/sauvegarder">
+                <div class="modal-body">
+                    <h6 class="text-primary mb-3">🏢 Entreprise</h6>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Nom de l'entreprise</label>
+                            <input type="text" name="nom" class="form-control"
+                                value="{{ entreprise.nom if entreprise else '' }}">
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Secteur d'activité</label>
+                            <input type="text" name="secteur" class="form-control"
+                                value="{{ entreprise.secteur if entreprise else '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Adresse</label>
+                        <input type="text" name="adresse" class="form-control"
+                            value="{{ entreprise.adresse if entreprise else '' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Téléphone</label>
+                            <input type="text" name="telephone" class="form-control"
+                                value="{{ entreprise.telephone if entreprise else '' }}">
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Site web</label>
+                            <input type="text" name="site_web" class="form-control"
+                                value="{{ entreprise.site_web if entreprise else '' }}">
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6 class="text-primary mb-3">👤 Tuteur professionnel</h6>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Nom du tuteur</label>
+                            <input type="text" name="tuteur_nom" class="form-control"
+                                value="{{ entreprise.tuteur_nom if entreprise else '' }}">
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Poste</label>
+                            <input type="text" name="tuteur_poste" class="form-control"
+                                value="{{ entreprise.tuteur_poste if entreprise else '' }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Email tuteur</label>
+                            <input type="email" name="tuteur_email" class="form-control"
+                                value="{{ entreprise.tuteur_email if entreprise else '' }}">
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Téléphone tuteur</label>
+                            <input type="text" name="tuteur_telephone" class="form-control"
+                                value="{{ entreprise.tuteur_telephone if entreprise else '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="tuteur_notes" class="form-control" rows="2"
+                            placeholder="Disponibilités, préférences...">{{ entreprise.tuteur_notes if entreprise else '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

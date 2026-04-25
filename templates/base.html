@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StageBoard - {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='tabler.min.css') }}">
+    <style>
+        body { display: flex; min-height: 100vh; margin: 0; }
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #1a1a2e;
+            padding: 20px 0;
+            position: fixed;
+            top: 0; left: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar .brand {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            padding: 10px 20px 30px;
+            text-decoration: none;
+        }
+        .sidebar a {
+            display: block;
+            color: rgba(255,255,255,0.75);
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 6px;
+            margin: 0 10px;
+            padding: 12px 10px;
+        }
+        .sidebar .logout {
+            margin-top: auto;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 10px;
+        }
+        .sidebar .user-info {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            padding: 10px 20px;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+            flex: 1;
+            background: #f4f6f9;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <a href="/dashboard" class="brand">🎓 StageBoard</a>
+
+        <a href="/dashboard" {% if request.path == '/dashboard' %}class="active"{% endif %}>
+            🏠 Tableau de bord
+        </a>
+        <a href="/echeances" {% if request.path == '/echeances' %}class="active"{% endif %}>
+    📅 Échéances
+    {% if alertes_count and alertes_count > 0 %}
+        <span style="background:#e94560; color:white; border-radius:50%; 
+                     padding:1px 6px; font-size:11px; margin-left:5px;">
+            {{ alertes_count }}
+        </span>
+    {% endif %}
+</a>
+        <a href="/journal" {% if request.path == '/journal' %}class="active"{% endif %}>
+            📓 Journal de bord
+        </a>
+        <a href="/entreprise" {% if request.path == '/entreprise' %}class="active"{% endif %}>
+            🏢 Entreprise
+        </a>
+
+        <a href="/stages/nouveau" {% if request.path == '/stages/nouveau' %}class="active"{% endif %}>
+            ➕ Nouveau stage
+       </a>
+     <a href="/stages/historique" {% if request.path == '/stages/historique' %}class="active"{% endif %}>
+    📚 Historique stages
+     </a>
+        <a href="/profil" {% if request.path == '/profil' %}class="active"{% endif %}>
+            👤 Profil
+        </a>
+        <div class="logout">
+            <a href="/logout">🚪 Déconnexion</a>
+            <div class="user-info">👋 {{ session.get('user_prenom', '') }}</div>
+        </div>
+    </div>
+
+    <!-- CONTENU PRINCIPAL -->
+    <div class="main-content">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+    </div>
+
+<script src="{{ url_for('static', filename='tabler.min.js') }}"></script>
+</body>
+</html>

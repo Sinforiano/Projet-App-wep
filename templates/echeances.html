@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Échéances{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">📅 Échéances</h2>
+        <p class="text-muted">Gérez vos deadlines et ne manquez rien.</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjout">
+        + Ajouter une échéance
+    </button>
+</div>
+
+<div class="mb-3">
+    <a href="/echeances" class="btn btn-sm {% if filtre == 'tous' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Toutes</a>
+    <a href="/echeances?filtre=a_venir" class="btn btn-sm {% if filtre == 'a_venir' %}btn-primary{% else %}btn-outline-secondary{% endif %}">À venir</a>
+    <a href="/echeances?filtre=termine" class="btn btn-sm {% if filtre == 'termine' %}btn-success{% else %}btn-outline-secondary{% endif %}">Terminées</a>
+    <a href="/echeances?filtre=retard" class="btn btn-sm {% if filtre == 'retard' %}btn-danger{% else %}btn-outline-secondary{% endif %}">En retard</a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead style="background:#f4f6f9;">
+                <tr>
+                    <th>Titre</th>
+                    <th>Description</th>
+                    <th>Date limite</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in echeances %}
+                <tr>
+                    <td class="fw-bold">{{ e.titre }}</td>
+                    <td class="text-muted">{{ e.description }}</td>
+                    <td>{{ e.date_limite }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if e.statut == 'retard' %}bg-danger
+                            {% elif e.statut == 'termine' %}bg-success
+                            {% else %}bg-warning text-dark{% endif %}">
+                            {% if e.statut == 'a_venir' %}À venir
+                            {% elif e.statut == 'termine' %}Terminée
+                            {% else %}En retard{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if e.statut != 'termine' %}
+                        <a href="/echeances/terminer/{{ e.id }}" class="btn btn-sm btn-success">✓</a>
+                        {% endif %}
+                        <a href="/echeances/supprimer/{{ e.id }}" class="btn btn-sm btn-danger"
+                           onclick="return confirm('Supprimer cette échéance ?')">🗑</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        Aucune échéance. Ajoutez-en une !
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAjout" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle échéance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/echeances/ajouter">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre</label>
+                        <input type="text" name="titre" class="form-control" required placeholder="Ex: Rapport intermédiaire">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Détails..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date limite</label>
+                        <input type="date" name="date_limite" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Statut</label>
+                        <select name="statut" class="form-select">
+                            <option value="a_venir">À venir</option>
+                            <option value="termine">Terminée</option>
+                            <option value="retard">En retard</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

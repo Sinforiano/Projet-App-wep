@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Profil{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">👤 Mon Profil</h2>
+        <p class="text-muted">Gérez vos informations personnelles.</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Infos personnelles -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0">📋 Informations personnelles</h5></div>
+            <div class="card-body">
+                <form method="POST" action="/profil/modifier">
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Nom</label>
+                            <input type="text" name="nom" class="form-control" value="{{ user.nom }}" required>
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Prénom</label>
+                            <input type="text" name="prenom" class="form-control" value="{{ user.prenom }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Filière</label>
+                        <input type="text" name="filiere" class="form-control" value="{{ user.filiere or '' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Année</label>
+                            <select name="annee" class="form-select">
+                                <option value="1" {% if user.annee == '1' %}selected{% endif %}>1ère année</option>
+                                <option value="2" {% if user.annee == '2' %}selected{% endif %}>2ème année</option>
+                                <option value="3" {% if user.annee == '3' %}selected{% endif %}>3ème année</option>
+                            </select>
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Type</label>
+                            <select name="type_stage" class="form-select">
+                                <option value="stage" {% if user.type_stage == 'stage' %}selected{% endif %}>Stage</option>
+                                <option value="alternance" {% if user.type_stage == 'alternance' %}selected{% endif %}>Alternance</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Date début</label>
+                            <input type="date" name="date_debut" class="form-control" value="{{ user.date_debut or '' }}">
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Date fin</label>
+                            <input type="date" name="date_fin" class="form-control" value="{{ user.date_fin or '' }}">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">💾 Sauvegarder</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Changer mot de passe -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0">🔒 Changer le mot de passe</h5></div>
+            <div class="card-body">
+                <form method="POST" action="/profil/password">
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe actuel</label>
+                        <input type="password" name="ancien_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nouveau mot de passe</label>
+                        <input type="password" name="nouveau_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmer le nouveau mot de passe</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">🔑 Changer le mot de passe</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Résumé du stage -->
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">📊 Résumé du stage</h5></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted">Type</td>
+                        <td class="fw-bold text-capitalize">{{ user.type_stage or 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Début</td>
+                        <td>{{ user.date_debut or 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Fin</td>
+                        <td>{{ user.date_fin or 'Non renseigné' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Filière</td>
+                        <td>{{ user.filiere or 'Non renseigné' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

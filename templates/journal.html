@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Journal de bord{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">📓 Journal de bord</h2>
+        <p class="text-muted">Consignez vos activités chaque semaine.</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjout">
+        + Nouvelle entrée
+    </button>
+</div>
+
+<!-- FILTRE PAR DATE -->
+<div class="card mb-4">
+    <div class="card-body py-2">
+        <form method="GET" action="/journal" class="d-flex gap-3 align-items-center">
+            <label class="mb-0">Filtrer par période :</label>
+            <input type="date" name="date_debut" class="form-control w-auto" value="{{ date_debut }}">
+            <span>→</span>
+            <input type="date" name="date_fin" class="form-control w-auto" value="{{ date_fin }}">
+            <button type="submit" class="btn btn-secondary">Filtrer</button>
+            <a href="/journal" class="btn btn-outline-secondary">Réinitialiser</a>
+        </form>
+    </div>
+</div>
+
+<!-- LISTE DES ENTRÉES -->
+{% for entree in entrees %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <span class="badge bg-primary mb-2">{{ entree.date_entree }}</span>
+                <h5 class="card-title">Tâches réalisées</h5>
+                <p class="text-muted">{{ entree.taches }}</p>
+                <h6 class="mt-3">✅ Compétences acquises</h6>
+                <p class="text-muted">{{ entree.competences }}</p>
+                <h6 class="mt-3">⚠️ Difficultés rencontrées</h6>
+                <p class="text-muted">{{ entree.difficultes }}</p>
+            </div>
+            <a href="/journal/supprimer/{{ entree.id }}" class="btn btn-sm btn-danger"
+               onclick="return confirm('Supprimer cette entrée ?')">🗑</a>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center text-muted py-5">
+        Aucune entrée dans le journal. Ajoutez votre première entrée !
+    </div>
+</div>
+{% endfor %}
+
+<!-- MODAL AJOUT -->
+<div class="modal fade" id="modalAjout" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle entrée</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/journal/ajouter">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date de l'entrée</label>
+                        <input type="date" name="date_entree" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tâches réalisées</label>
+                        <textarea name="taches" class="form-control" rows="3"
+                            placeholder="Quelles tâches avez-vous accomplies cette semaine ?"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Compétences acquises</label>
+                        <textarea name="competences" class="form-control" rows="3"
+                            placeholder="Quelles compétences avez-vous développées ?"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Difficultés rencontrées</label>
+                        <textarea name="difficultes" class="form-control" rows="3"
+                            placeholder="Quelles difficultés avez-vous rencontrées ?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

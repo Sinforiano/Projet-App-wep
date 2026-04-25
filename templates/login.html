@@ -2,19 +2,46 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - StageBoard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; }
+        .card { border: none; border-radius: 15px; }
+        .btn-primary { background: #0f3460; border: none; }
+        .btn-primary:hover { background: #e94560; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <h2>Connexion</h2>
-        <form action="/login" method="POST">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Mot de passe" required>
-            <button type="submit">Se connecter</button>
-        </form>
-        <a href="/register" class="link">Pas encore de compte ? S'inscrire</a>
+<body class="d-flex align-items-center justify-content-center">
+    <div class="col-md-4">
+        <div class="text-center mb-4">
+            <h2 class="text-white fw-bold">🎓 StageBoard</h2>
+            <p class="text-secondary">Suivi de stage & alternance</p>
+        </div>
+        <div class="card shadow-lg p-4">
+            <h4 class="mb-3 text-center">Connexion</h4>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" placeholder="email@exemple.com" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">Se connecter</button>
+            </form>
+            <p class="text-center mt-3 mb-0">
+                Pas de compte ? <a href="/register">S'inscrire</a>
+            </p>
+        </div>
     </div>
 </body>
 </html>
