@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>Inscription - StageBoard</title>
-   <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
-   <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='tabler.min.css') }}">
     <style>
         body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; padding: 30px 0; }
         .card { border: none; border-radius: 15px; }
-        .btn-success { background: #0f3460; border: none; }
-        .btn-success:hover { background: #e94560; }
+        .btn-primary { background: #0f3460; border: none; }
+        .btn-primary:hover { background: #e94560; }
     </style>
 </head>
 <body class="d-flex align-items-center justify-content-center">
-    <div class="col-md-5">
+    <div class="col-md-4">
         <div class="text-center mb-4">
             <h2 class="text-white fw-bold">🎓 StageBoard</h2>
-            <p class="text-secondary">Créer votre compte étudiant</p>
+            <p class="text-secondary">Créer votre compte</p>
         </div>
         <div class="card shadow-lg p-4">
             <h4 class="mb-3 text-center">Inscription</h4>
@@ -46,38 +45,7 @@
                     <label class="form-label">Mot de passe</label>
                     <input type="password" name="password" class="form-control" required>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Filière</label>
-                    <input type="text" name="filiere" class="form-control" placeholder="Ex: Cybersécurité, Réseaux...">
-                </div>
-                <div class="row">
-                    <div class="col mb-3">
-                        <label class="form-label">Année</label>
-                        <select name="annee" class="form-select">
-                            <option value="1">1ère année</option>
-                            <option value="2">2ème année</option>
-                            <option value="3">3ème année</option>
-                        </select>
-                    </div>
-                    <div class="col mb-3">
-                        <label class="form-label">Type</label>
-                        <select name="type_stage" class="form-select">
-                            <option value="stage">Stage</option>
-                            <option value="alternance">Alternance</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col mb-3">
-                        <label class="form-label">Date début</label>
-                        <input type="date" name="date_debut" class="form-control">
-                    </div>
-                    <div class="col mb-3">
-                        <label class="form-label">Date fin</label>
-                        <input type="date" name="date_fin" class="form-control">
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-success w-100 py-2">Créer mon compte</button>
+                <button type="submit" class="btn btn-primary w-100 py-2">S'inscrire</button>
             </form>
             <p class="text-center mt-3 mb-0">
                 Déjà un compte ? <a href="/login">Se connecter</a>

@@ -1,11 +1,11 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from datetime import date, datetime
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from datetime import date, timedelta
 from dotenv import load_dotenv
 
-# Chargement des variables d'environnement
 load_dotenv()
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -16,26 +16,37 @@ bcrypt = Bcrypt(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///' + os.path.join(base_dir, 'stageboard.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'stageboard_secret_key_2026')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt_stageboard_secret_2026')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 
 db = SQLAlchemy(app)
+jwt = JWTManager(app)
 
-# --- CONTEXT PROCESSOR ALERTES ---
+# --- CONTEXT PROCESSOR ---
 @app.context_processor
-def inject_alertes():
+def inject_globals():
+    alertes_count = 0
+    profil_incomplet = False
+
     if 'user_id' in session:
         stage = Stage.query.filter_by(
             user_id=session['user_id'], actif=True
         ).first()
         if stage:
             today = date.today()
-            count = 0
             for e in stage.echeances:
                 if e.statut != 'termine':
                     jours = (date.fromisoformat(e.date_limite) - today).days
                     if 0 <= jours <= 7:
-                        count += 1
-            return dict(alertes_count=count)
-    return dict(alertes_count=0)
+                        alertes_count += 1
+        else:
+            profil_incomplet = True
+
+        user = User.query.get(session['user_id'])
+        if user and (not user.filiere or not user.annee):
+            profil_incomplet = True
+
+    return dict(alertes_count=alertes_count, profil_incomplet=profil_incomplet)
 
 # --- MODÈLES ---
 
@@ -112,6 +123,10 @@ def update_statuts(stage_id):
             e.statut = 'retard'
     db.session.commit()
 
+def profil_est_complet(user):
+    stage = Stage.query.filter_by(user_id=user.id, actif=True).first()
+    return bool(user.filiere and user.annee and stage)
+
 # --- ROUTES AUTH ---
 
 @app.route('/')
@@ -127,33 +142,18 @@ def register():
         prenom = request.form.get('prenom')
         email = request.form.get('email')
         password = request.form.get('password')
-        filiere = request.form.get('filiere')
-        annee = request.form.get('annee')
-        type_stage = request.form.get('type_stage')
-        date_debut = request.form.get('date_debut')
-        date_fin = request.form.get('date_fin')
 
         hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
         new_user = User(
-            nom=nom, prenom=prenom, email=email,
-            password_hash=hashed_pw, filiere=filiere,
-            annee=annee
+            nom=nom, prenom=prenom,
+            email=email, password_hash=hashed_pw
         )
         try:
             db.session.add(new_user)
-            db.session.flush()
-            premier_stage = Stage(
-                user_id=new_user.id,
-                type_stage=type_stage,
-                date_debut=date_debut,
-                date_fin=date_fin,
-                actif=True
-            )
-            db.session.add(premier_stage)
             db.session.commit()
-            flash('Compte créé avec succès ! Connectez-vous.', 'success')
+            flash('Compte créé ! Connectez-vous.', 'success')
             return redirect(url_for('login'))
-        except Exception as e:
+        except:
             db.session.rollback()
             flash('Email déjà utilisé.', 'danger')
 
@@ -167,10 +167,15 @@ def login():
         user = User.query.filter_by(email=email).first()
 
         if user and bcrypt.check_password_hash(user.password_hash, password):
+            # Session Flask pour navigation
             session['user_id'] = user.id
             session['user_prenom'] = user.prenom
+            # JWT Token pour API
+            token = create_access_token(identity=str(user.id))
             flash(f'Bienvenue {user.prenom} !', 'success')
-            return redirect(url_for('dashboard'))
+            response = redirect(url_for('dashboard'))
+            response.set_cookie('jwt_token', token, httponly=True, max_age=3600)
+            return response
         else:
             flash('Email ou mot de passe incorrect.', 'danger')
 
@@ -179,8 +184,10 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
+    response = redirect(url_for('login'))
+    response.delete_cookie('jwt_token')
     flash('Déconnexion réussie.', 'info')
-    return redirect(url_for('login'))
+    return response
 
 # --- DASHBOARD ---
 
@@ -281,8 +288,8 @@ def echeances():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        flash("Créez d'abord un stage.", 'warning')
-        return redirect(url_for('nouveau_stage'))
+        flash("Complétez votre profil d'abord.", 'warning')
+        return redirect(url_for('profil'))
     update_statuts(stage.id)
     filtre = request.args.get('filtre', 'tous')
     if filtre == 'tous':
@@ -297,7 +304,7 @@ def ajouter_echeance():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        return redirect(url_for('nouveau_stage'))
+        return redirect(url_for('profil'))
     nouvelle = Echeance(
         stage_id=stage.id,
         titre=request.form.get('titre'),
@@ -342,8 +349,8 @@ def journal():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        flash("Créez d'abord un stage.", 'warning')
-        return redirect(url_for('nouveau_stage'))
+        flash("Complétez votre profil d'abord.", 'warning')
+        return redirect(url_for('profil'))
     date_debut = request.args.get('date_debut', '')
     date_fin = request.args.get('date_fin', '')
     query = Journal.query.filter_by(stage_id=stage.id)
@@ -361,7 +368,7 @@ def ajouter_journal():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        return redirect(url_for('nouveau_stage'))
+        return redirect(url_for('profil'))
     nouvelle = Journal(
         stage_id=stage.id,
         date_entree=request.form.get('date_entree'),
@@ -394,8 +401,8 @@ def entreprise():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        flash("Créez d'abord un stage.", 'warning')
-        return redirect(url_for('nouveau_stage'))
+        flash("Complétez votre profil d'abord.", 'warning')
+        return redirect(url_for('profil'))
     ent = Entreprise.query.filter_by(stage_id=stage.id).first()
     return render_template('entreprise.html', entreprise=ent)
 
@@ -405,7 +412,7 @@ def sauvegarder_entreprise():
         return redirect(url_for('login'))
     stage = get_stage_actif()
     if not stage:
-        return redirect(url_for('nouveau_stage'))
+        return redirect(url_for('profil'))
     ent = Entreprise.query.filter_by(stage_id=stage.id).first()
     if not ent:
         ent = Entreprise(stage_id=stage.id)
@@ -434,7 +441,8 @@ def profil():
     stages = Stage.query.filter_by(
         user_id=session['user_id']
     ).order_by(Stage.date_debut.desc()).all()
-    return render_template('profil.html', user=user, stages=stages)
+    stage_actif = get_stage_actif()
+    return render_template('profil.html', user=user, stages=stages, stage_actif=stage_actif)
 
 @app.route('/profil/modifier', methods=['POST'])
 def modifier_profil():
@@ -446,6 +454,28 @@ def modifier_profil():
     user.email = request.form.get('email')
     user.filiere = request.form.get('filiere')
     user.annee = request.form.get('annee')
+
+    # Validation date_fin >= date_debut
+    date_debut = request.form.get('date_debut')
+    date_fin = request.form.get('date_fin')
+    if date_debut and date_fin and date_fin < date_debut:
+        flash('La date de fin doit être après la date de début.', 'danger')
+        return redirect(url_for('profil'))
+
+    # Si pas de stage actif on en crée un
+    stage_actif = get_stage_actif()
+    if not stage_actif:
+        type_stage = request.form.get('type_stage')
+        if type_stage and date_debut and date_fin:
+            nouveau = Stage(
+                user_id=user.id,
+                type_stage=type_stage,
+                date_debut=date_debut,
+                date_fin=date_fin,
+                actif=True
+            )
+            db.session.add(nouveau)
+
     db.session.commit()
     session['user_prenom'] = user.prenom
     flash('Profil mis à jour !', 'success')
@@ -468,6 +498,143 @@ def changer_password():
         db.session.commit()
         flash('Mot de passe changé !', 'success')
     return redirect(url_for('profil'))
+
+# --- API JWT ---
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Données manquantes'}), 400
+    nom = data.get('nom')
+    prenom = data.get('prenom')
+    email = data.get('email')
+    password = data.get('password')
+    if not all([nom, prenom, email, password]):
+        return jsonify({'error': 'Tous les champs sont requis'}), 400
+    hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(nom=nom, prenom=prenom, email=email, password_hash=hashed_pw)
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        token = create_access_token(identity=str(new_user.id))
+        return jsonify({
+            'message': 'Compte créé',
+            'token': token,
+            'user': {'id': new_user.id, 'prenom': new_user.prenom}
+        }), 201
+    except:
+        db.session.rollback()
+        return jsonify({'error': 'Email déjà utilisé'}), 409
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Données manquantes'}), 400
+    email = data.get('email')
+    password = data.get('password')
+    user = User.query.filter_by(email=email).first()
+    if user and bcrypt.check_password_hash(user.password_hash, password):
+        token = create_access_token(identity=str(user.id))
+        return jsonify({
+            'message': f'Bienvenue {user.prenom}',
+            'token': token,
+            'user': {'id': user.id, 'prenom': user.prenom, 'nom': user.nom}
+        })
+    return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
+
+@app.route('/api/profil', methods=['GET'])
+@jwt_required()
+def api_profil():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+    if not user:
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    return jsonify({
+        'id': user.id,
+        'nom': user.nom,
+        'prenom': user.prenom,
+        'email': user.email,
+        'filiere': user.filiere,
+        'annee': user.annee
+    })
+
+@app.route('/api/profil', methods=['PUT'])
+@jwt_required()
+def api_modifier_profil():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+    if not user:
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    data = request.get_json()
+    date_debut = data.get('date_debut')
+    date_fin = data.get('date_fin')
+    if date_debut and date_fin and date_fin < date_debut:
+        return jsonify({'error': 'La date de fin doit être après la date de début'}), 400
+    user.nom = data.get('nom', user.nom)
+    user.prenom = data.get('prenom', user.prenom)
+    user.filiere = data.get('filiere', user.filiere)
+    user.annee = data.get('annee', user.annee)
+    db.session.commit()
+    return jsonify({'message': 'Profil mis à jour'})
+
+@app.route('/api/echeances', methods=['GET'])
+@jwt_required()
+def api_echeances():
+    user_id = get_jwt_identity()
+    stage = Stage.query.filter_by(user_id=int(user_id), actif=True).first()
+    if not stage:
+        return jsonify({'echeances': []})
+    liste = Echeance.query.filter_by(stage_id=stage.id).all()
+    return jsonify({'echeances': [
+        {'id': e.id, 'titre': e.titre, 'description': e.description,
+         'date_limite': e.date_limite, 'statut': e.statut} for e in liste
+    ]})
+
+@app.route('/api/journal', methods=['GET'])
+@jwt_required()
+def api_journal():
+    user_id = get_jwt_identity()
+    stage = Stage.query.filter_by(user_id=int(user_id), actif=True).first()
+    if not stage:
+        return jsonify({'entrees': []})
+    entrees = Journal.query.filter_by(stage_id=stage.id).order_by(Journal.date_entree.desc()).all()
+    return jsonify({'entrees': [
+        {'id': e.id, 'date_entree': e.date_entree, 'taches': e.taches,
+         'competences': e.competences, 'difficultes': e.difficultes} for e in entrees
+    ]})
+
+@app.route('/api/dashboard', methods=['GET'])
+@jwt_required()
+def api_dashboard():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+    stage = Stage.query.filter_by(user_id=int(user_id), actif=True).first()
+    if not stage:
+        return jsonify({'error': 'Aucun stage actif'}), 404
+    jours_restants = 0
+    progression = 0
+    if stage.date_debut and stage.date_fin:
+        debut = date.fromisoformat(stage.date_debut)
+        fin = date.fromisoformat(stage.date_fin)
+        today = date.today()
+        total_jours = (fin - debut).days
+        jours_passes = (today - debut).days
+        jours_restants = max((fin - today).days, 0)
+        progression = min(round((jours_passes / total_jours) * 100), 100) if total_jours > 0 else 0
+    prochaine = Echeance.query.filter_by(
+        stage_id=stage.id
+    ).filter(Echeance.statut != 'termine').order_by(Echeance.date_limite).first()
+    return jsonify({
+        'user': f'{user.prenom} {user.nom}',
+        'jours_restants': jours_restants,
+        'progression': progression,
+        'prochaine_echeance': {
+            'titre': prochaine.titre,
+            'date_limite': prochaine.date_limite
+        } if prochaine else None
+    })
 
 # --- 404 ---
 @app.errorhandler(404)
